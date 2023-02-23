@@ -25,3 +25,5 @@ forge test
 ```sh
 forge snapshot
 ```
+
+credits to solmate for the gas optimization inspiration

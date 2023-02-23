@@ -32,11 +32,9 @@ library SafeMath {
      *
      * - Addition cannot overflow.
      */
-    function add(uint256 a, uint256 b) internal pure returns (uint256) {
-        uint256 c = a + b;
+    function add(uint256 a, uint256 b) internal pure returns (uint256 c) {
+        c = a + b;
         require(c >= a, "SafeMath: addition overflow");
-
-        return c;
     }
 
     /**
@@ -49,8 +47,8 @@ library SafeMath {
      *
      * - Subtraction cannot overflow.
      */
-    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-        return sub(a, b, "SafeMath: subtraction overflow");
+    function sub(uint256 a, uint256 b) internal pure returns (uint256 c) {
+        c = sub(a, b, "SafeMath: subtraction overflow");
     }
 
     /**
@@ -63,11 +61,9 @@ library SafeMath {
      *
      * - Subtraction cannot overflow.
      */
-    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256 c) {
         require(b <= a, errorMessage);
-        uint256 c = a - b;
-
-        return c;
+        c = a - b;
     }
 
     /**
@@ -80,7 +76,7 @@ library SafeMath {
      *
      * - Multiplication cannot overflow.
      */
-    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    function mul(uint256 a, uint256 b) internal pure returns (uint256 c) {
         // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
         // benefit is lost if 'b' is also tested.
         // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
@@ -88,10 +84,8 @@ library SafeMath {
             return 0;
         }
 
-        uint256 c = a * b;
+        c = a * b;
         require(c / a == b, "SafeMath: multiplication overflow");
-
-        return c;
     }
 
     /**
@@ -106,8 +100,8 @@ library SafeMath {
      *
      * - The divisor cannot be zero.
      */
-    function div(uint256 a, uint256 b) internal pure returns (uint256) {
-        return div(a, b, "SafeMath: division by zero");
+    function div(uint256 a, uint256 b) internal pure returns (uint256 c) {
+        c = div(a, b, "SafeMath: division by zero");
     }
 
     /**
@@ -122,12 +116,10 @@ library SafeMath {
      *
      * - The divisor cannot be zero.
      */
-    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256 c) {
         require(b > 0, errorMessage);
-        uint256 c = a / b;
+        c = a / b;
         // assert(a == b * c + a % b); // There is no case in which this doesn't hold
-
-        return c;
     }
 
     /**
@@ -142,8 +134,8 @@ library SafeMath {
      *
      * - The divisor cannot be zero.
      */
-    function mod(uint256 a, uint256 b) internal pure returns (uint256) {
-        return mod(a, b, "SafeMath: modulo by zero");
+    function mod(uint256 a, uint256 b) internal pure returns (uint256 c) {
+        c = mod(a, b, "SafeMath: modulo by zero");
     }
 
     /**
@@ -158,9 +150,9 @@ library SafeMath {
      *
      * - The divisor cannot be zero.
      */
-    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256 c) {
         require(b != 0, errorMessage);
-        return a % b;
+        c = a % b;
     }
 }
 
@@ -642,17 +634,20 @@ contract FiatTokenV1 is AbstractFiatTokenV1, Ownable, Pausable, Blacklistable {
         notBlacklisted(_to)
         returns (bool)
     {
+        uint256 mintingAllowedAmount = minterAllowed[msg.sender];
+
         require(_to != address(0), "FiatToken: mint to the zero address");
         require(_amount > 0, "FiatToken: mint amount not greater than 0");
-
-        uint256 mintingAllowedAmount = minterAllowed[msg.sender];
         require(_amount <= mintingAllowedAmount, "FiatToken: mint amount exceeds minterAllowance");
 
         totalSupply_ = totalSupply_.add(_amount);
-        balances[_to] = balances[_to].add(_amount);
-        minterAllowed[msg.sender] = mintingAllowedAmount.sub(_amount);
+        // sum of all balances will never exceed totalSupply_ which by its own never exceeds uint256 max
+        balances[_to] += _amount;
+        minterAllowed[msg.sender] = mintingAllowedAmount - _amount; // already ensured to never underflow due to the require check
+
         emit Mint(msg.sender, _to, _amount);
         emit Transfer(address(0), _to, _amount);
+
         return true;
     }
 
@@ -754,9 +749,10 @@ contract FiatTokenV1 is AbstractFiatTokenV1, Ownable, Pausable, Blacklistable {
         notBlacklisted(to)
         returns (bool)
     {
-        require(value <= allowed[from][msg.sender], "ERC20: transfer amount exceeds allowance");
+        uint256 allowedAmount = allowed[from][msg.sender];
+        require(value <= allowedAmount, "ERC20: transfer amount exceeds allowance");
         _transfer(from, to, value);
-        allowed[from][msg.sender] = allowed[from][msg.sender].sub(value);
+        allowed[from][msg.sender] = allowedAmount - value; // already ensured to never underflow due to the require check
         return true;
     }
 
@@ -785,12 +781,15 @@ contract FiatTokenV1 is AbstractFiatTokenV1, Ownable, Pausable, Blacklistable {
      * @param value Transfer amount
      */
     function _transfer(address from, address to, uint256 value) internal override {
+        uint256 fromBalance = balances[from];
+
         require(from != address(0), "ERC20: transfer from the zero address");
         require(to != address(0), "ERC20: transfer to the zero address");
-        require(value <= balances[from], "ERC20: transfer amount exceeds balance");
+        require(value <= fromBalance, "ERC20: transfer amount exceeds balance");
 
-        balances[from] = balances[from].sub(value);
-        balances[to] = balances[to].add(value);
+        balances[from] = fromBalance - value; // already checked in the require check
+        balances[to] = balances[to] + value; // will never overflow, since users total balance will never exceed totalSupply_ max which is uint256 max
+
         emit Transfer(from, to, value);
     }
 
@@ -808,6 +807,7 @@ contract FiatTokenV1 is AbstractFiatTokenV1, Ownable, Pausable, Blacklistable {
     {
         minters[minter] = true;
         minterAllowed[minter] = minterAllowedAmount;
+
         emit MinterConfigured(minter, minterAllowedAmount);
         return true;
     }
@@ -820,6 +820,7 @@ contract FiatTokenV1 is AbstractFiatTokenV1, Ownable, Pausable, Blacklistable {
     function removeMinter(address minter) external onlyMasterMinter returns (bool) {
         minters[minter] = false;
         minterAllowed[minter] = 0;
+
         emit MinterRemoved(minter);
         return true;
     }
@@ -835,8 +836,9 @@ contract FiatTokenV1 is AbstractFiatTokenV1, Ownable, Pausable, Blacklistable {
         require(_amount > 0, "FiatToken: burn amount not greater than 0");
         require(balance >= _amount, "FiatToken: burn amount exceeds balance");
 
-        totalSupply_ = totalSupply_.sub(_amount);
-        balances[msg.sender] = balance.sub(_amount);
+        balances[msg.sender] = balance - _amount; // already checked in the require check
+        totalSupply_ = totalSupply_ - _amount; // would never underflow, since the total balance of user will never exceed (totalSupply max = uint256 max)
+
         emit Burn(msg.sender, _amount);
         emit Transfer(msg.sender, address(0), _amount);
     }
