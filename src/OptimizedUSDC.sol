@@ -1866,7 +1866,7 @@ pragma solidity 0.6.12;
  * @title FiatToken V2.1
  * @notice ERC20 Token backed by fiat reserves, version 2.1
  */
-contract FiatTokenV2_1 is FiatTokenV2 {
+contract FiatTokenV2_1_Optimized is FiatTokenV2 {
     /**
      * @notice Initialize v2.1
      * @param lostAndFound  The address to which the locked funds are sent
