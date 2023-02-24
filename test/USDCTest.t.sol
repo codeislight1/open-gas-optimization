@@ -1,27 +1,43 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity 0.6.12;
 
-import {Test} from "forge-std/Test.sol";
-import {BlurExchange} from "../src/BlurExchange.sol";
 import "./Common.sol";
-import {Input, Order, Execution, SignatureVersion, Fee} from "../src/lib/OrderStructs.sol";
+import {Test} from "forge-std/Test.sol";
+import {FiatTokenV2_1} from "../src/USDC.sol";
+import "../src/IProxy.sol";
+import {FiatTokenV2_1_Optimized} from "../src/OptimizedUSDC.sol";
 import "forge-std/console.sol";
 
 contract USDCTest is Test, Common {
     function setUp() public {
         // setup mainnet fork
-        uint256 forkId = vm.createFork("https://eth-mainnet.g.alchemy.com/v2/PIJ-XWn0szDM65qMpM2SZsfi3GlIWPbo");
+        uint256 forkId = vm.createFork(RPC);
         vm.rollFork(forkId, blocknumber);
         vm.selectFork(forkId);
-        // check block number
-        assertEq(block.number, blocknumber);
+        assertEq(blocknumber, block.number, "wrong block number!");
     }
 
-    function testExecute() public {
-        callBlurExchange(executeCaller, executeValue, executeCalldata);
+    function testMint() public {
+        _mint(circle, 1 ** 6);
     }
 
-    function testBulkExecute() public {
-        callBlurExchange(bulkExecuteCaller, bulkExecuteValue, bulkExecuteCalldata);
+    function testBurn() public {
+        _burn(100);
+    }
+
+    function testIncreaseAllowance() public {
+        _increaseAllowance(whale, address(1), 1 ** 6);
+    }
+
+    function testDecreaseAllowance() public {
+        _decreaseAllowance(whale, address(1), 1 ** 6);
+    }
+
+    function testTransferFrom() public {
+        _transferFrom(whale, address(1), 1 ** 6);
+    }
+
+    function testTransfer() public {
+        _transfer(whale, address(1), 1 ** 6);
     }
 }

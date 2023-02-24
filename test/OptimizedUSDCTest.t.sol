@@ -1,49 +1,56 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity 0.6.12;
 
 import "./Common.sol";
 import {Test} from "forge-std/Test.sol";
 import {FiatTokenV2_1} from "../src/USDC.sol";
+import "../src/IProxy.sol";
 import {FiatTokenV2_1_Optimized} from "../src/OptimizedUSDC.sol";
+import "forge-std/console.sol";
 import "forge-std/console.sol";
 
 contract USDCOptimizedTest is Test, Common {
-    BlurExchangeOptimized exchange;
+    FiatTokenV2_1_Optimized usdc;
 
     function setUp() public {
         // setup mainnet fork
-        uint256 forkId = vm.createFork("https://eth-mainnet.g.alchemy.com/v2/PIJ-XWn0szDM65qMpM2SZsfi3GlIWPbo");
+        uint256 forkId = vm.createFork(RPC);
         vm.rollFork(forkId, blocknumber);
         vm.selectFork(forkId);
-        // check block number
-        assertEq(block.number, blocknumber);
-        exchange = BlurExchangeOptimized(proxy);
+        assertEq(blocknumber, block.number, "wrong block number!");
+        usdc = FiatTokenV2_1_Optimized(proxy);
         // deploy new implementation
-        address newImplementation = address(new BlurExchangeOptimized());
+        address newImplementation = address(new FiatTokenV2_1_Optimized());
         // use proxy owner
-        vm.startPrank(owner);
+        address _owner = address(
+            uint160(uint256(vm.load(proxy, 0x10d6a54a4754c8869d6886b5f5d7fbfa5b4522237ea5c60d11bc4e7a1ff9390b)))
+        );
+        vm.prank(_owner);
         // upgrade to new implementation
-        exchange.upgradeTo(newImplementation);
-        // initialize the reentrancyGuards
-        exchange.initializeV2();
-        vm.stopPrank();
+        IProxy(address(usdc)).upgradeTo(newImplementation);
     }
 
-    function testMint() public {}
-    function testBurn() public {}
-    function testSafeIncreaseAllowance() public {}
-    function testIncreaseAllowance() public {}
-    function testSafeDecreaseAllowance() public {}
-    function testDecreaseAllowance() public {}
-    function testApprove() public {}
-    function testTransferFrom() public {}
-    function testTransfer() public {}
-
-    function testExecuteOptimized() public {
-        callBlurExchange(executeCaller, executeValue, executeCalldata);
+    function testMintOptimized() public {
+        _mint(circle, 1 ** 6);
     }
 
-    function testBulkExecuteOptimized() public {
-        callBlurExchange(bulkExecuteCaller, bulkExecuteValue, bulkExecuteCalldata);
+    function testBurnOptimized() public {
+        _burn(100);
+    }
+
+    function testIncreaseAllowanceOptimized() public {
+        _increaseAllowance(whale, address(1), 1 ** 6);
+    }
+
+    function testDecreaseAllowanceOptimized() public {
+        _decreaseAllowance(whale, address(1), 1 ** 6);
+    }
+
+    function testTransferFromOptimized() public {
+        _transferFrom(whale, address(1), 1 ** 6);
+    }
+
+    function testTransferOptimized() public {
+        _transfer(whale, address(1), 1 ** 6);
     }
 }

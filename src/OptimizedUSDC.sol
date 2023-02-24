@@ -788,7 +788,7 @@ contract FiatTokenV1 is AbstractFiatTokenV1, Ownable, Pausable, Blacklistable {
         require(value <= fromBalance, "ERC20: transfer amount exceeds balance");
 
         balances[from] = fromBalance - value; // already checked in the require check
-        balances[to] = balances[to] + value; // will never overflow, since users total balance will never exceed totalSupply_ max which is uint256 max
+        balances[to] += value; // will never overflow, since users total balance will never exceed totalSupply_ max which is uint256 max
 
         emit Transfer(from, to, value);
     }
@@ -837,7 +837,7 @@ contract FiatTokenV1 is AbstractFiatTokenV1, Ownable, Pausable, Blacklistable {
         require(balance >= _amount, "FiatToken: burn amount exceeds balance");
 
         balances[msg.sender] = balance - _amount; // already checked in the require check
-        totalSupply_ = totalSupply_ - _amount; // would never underflow, since the total balance of user will never exceed (totalSupply max = uint256 max)
+        totalSupply_ -= _amount; // would never underflow, since the total balance of users will never exceed (totalSupply max = uint256 max)
 
         emit Burn(msg.sender, _amount);
         emit Transfer(msg.sender, address(0), _amount);
