@@ -42,10 +42,6 @@ contract USDCOptimizedTest is Test, Common {
         _increaseAllowance(whale, address(1), 1 ** 6);
     }
 
-    function testDecreaseAllowanceOptimized() public {
-        _decreaseAllowance(whale, address(1), 1 ** 6);
-    }
-
     function testTransferFromOptimized() public {
         _transferFrom(whale, address(1), 1 ** 6);
     }

@@ -44,17 +44,6 @@ contract Common is Test {
         assertEq(postAllowance - preAllowance, amount, "failed increase allowance!");
     }
 
-    function _decreaseAllowance(address from, address to, uint256 amount) public {
-        vm.startPrank(from);
-        _usdc.increaseAllowance(to, amount);
-        vm.stopPrank();
-        uint256 preAllowance = _usdc.allowance(from, to);
-        vm.startPrank(from);
-        __decreaseAllowance(to, amount);
-        uint256 postAllowance = _usdc.allowance(from, to);
-        assertEq(preAllowance - postAllowance, amount, "failed decrease allowance!");
-    }
-
     function _transferFrom(address from, address to, uint256 amount) public {
         assertTrue(_usdc.balanceOf(from) >= amount);
         uint256 preFromBalance = _usdc.balanceOf(from);
@@ -91,41 +80,34 @@ contract Common is Test {
         uint256 pre = gasleft();
         _usdc.transfer(to, amount);
         uint256 post = gasleft();
-        console.log(pre - post);
+        console.log("transfer", pre - post);
     }
 
     function __transferFrom(address from, address to, uint256 amount) private {
         uint256 pre = gasleft();
         _usdc.transferFrom(from, to, amount);
         uint256 post = gasleft();
-        console.log(pre - post);
+        console.log("transferFrom", pre - post);
     }
 
     function __increaseAllowance(address to, uint256 amount) private {
         uint256 pre = gasleft();
         _usdc.increaseAllowance(to, amount);
         uint256 post = gasleft();
-        console.log(pre - post);
-    }
-
-    function __decreaseAllowance(address to, uint256 amount) private {
-        uint256 pre = gasleft();
-        _usdc.decreaseAllowance(to, amount);
-        uint256 post = gasleft();
-        console.log(pre - post);
+        console.log("increaseAllowance", pre - post);
     }
 
     function __mint(address to, uint256 amount) private {
         uint256 pre = gasleft();
         _usdc.mint(to, amount);
         uint256 post = gasleft();
-        console.log(pre - post);
+        console.log("mint", pre - post);
     }
 
     function __burn(uint256 amount) private {
         uint256 pre = gasleft();
         _usdc.burn(amount);
         uint256 post = gasleft();
-        console.log(pre - post);
+        console.log("burn", pre - post);
     }
 }

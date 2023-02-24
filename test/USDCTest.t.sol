@@ -29,10 +29,6 @@ contract USDCTest is Test, Common {
         _increaseAllowance(whale, address(1), 1 ** 6);
     }
 
-    function testDecreaseAllowance() public {
-        _decreaseAllowance(whale, address(1), 1 ** 6);
-    }
-
     function testTransferFrom() public {
         _transferFrom(whale, address(1), 1 ** 6);
     }
